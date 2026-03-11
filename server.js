@@ -1,71 +1,52 @@
-const express = require("express");
-const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
-const ffmpeg = require("fluent-ffmpeg");
-const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+const ytDlp = require("yt-dlp-exec");
 
-ffmpeg.setFfmpegPath(ffmpegPath);
-const { getFormats } = require("./services/youtube");
+async function getVideoInfo(videoId) {
 
-const app = express();
-app.use(cors());
+  const url = `https://www.youtube.com/watch?v=${videoId}`;
 
-const CACHE = path.join(__dirname,"cache/videos");
-
-if(!fs.existsSync(CACHE)){
-  fs.mkdirSync(CACHE,{recursive:true});
-}
-
-app.get("/api/video/:id", async (req,res)=>{
-
-  const info = await getFormats(req.params.id);
-
-  res.json({
-    title: info.title,
-    qualities: info.videos.map(v => v.height)
+  const data = await ytDlp(url, {
+    dumpSingleJson: true,
+    noWarnings: true
   });
 
-});
+  const videoFormats = data.formats.filter(
+    f => f.vcodec !== "none" && f.height
+  );
 
-app.get("/stream/:id/:quality", async (req,res)=>{
+  const bestPerQuality = {};
 
-  const {id,quality} = req.params;
+  videoFormats.forEach(f => {
 
-//   const filePath = path.join(CACHE,`${id}-${quality}.mp4`);
+    const h = f.height;
 
-//   if(fs.existsSync(filePath)){
-//     return res.sendFile(filePath);
-//   }
+    if (!bestPerQuality[h] || (f.tbr || 0) > (bestPerQuality[h].tbr || 0)) {
+      bestPerQuality[h] = f;
+    }
 
-  const info = await getFormats(id);
+  });
 
-  const video = info.videos.find(v => v.height == quality);
+  const formats = Object.values(bestPerQuality)
+    .sort((a,b)=>a.height-b.height)
+    .map(f => ({
+      quality: `${f.height}p`,
+      formatId: f.format_id,
+      ext: f.ext,
+      videoUrl: f.url
+    }));
 
-  if(!video){
-    return res.status(404).send("Quality not found");
-  }
 
-  ffmpeg()
-    .input(video.url)
-    .input(info.audio)
-    .videoCodec("copy")
-    .audioCodec("aac")
-    .outputOptions("-movflags frag_keyframe+empty_moov")
-    .save(filePath)
-    .on("end",()=>{
+  const audio = data.formats
+    .filter(f => f.vcodec === "none" && f.acodec !== "none")
+    .sort((a,b)=>(b.abr || 0)-(a.abr || 0))[0];
 
-      res.sendFile(filePath);
 
-    })
-    .on("error",(err)=>{
-      res.status(500).send(err.message);
-    });
+  return {
+    title: data.title,
+    thumbnail: data.thumbnail,
+    audio: audio?.url,
+    videos: formats
+  };
 
-});
+}
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT,()=>{
-  console.log("Server running on port",PORT);
-});
+module.exports = { getVideoInfo };
