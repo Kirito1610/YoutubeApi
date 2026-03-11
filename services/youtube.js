@@ -1,6 +1,6 @@
 const ytDlp = require("yt-dlp-exec");
 
-async function getFormats(videoId) {
+async function getVideoInfo(videoId) {
 
   const url = `https://www.youtube.com/watch?v=${videoId}`;
 
@@ -9,22 +9,44 @@ async function getFormats(videoId) {
     noWarnings: true
   });
 
-  const videos = data.formats
-    .filter(f => f.vcodec !== "none" && f.height)
+  const videoFormats = data.formats.filter(
+    f => f.vcodec !== "none" && f.height
+  );
+
+  const bestPerQuality = {};
+
+  videoFormats.forEach(f => {
+
+    const h = f.height;
+
+    if (!bestPerQuality[h] || (f.tbr || 0) > (bestPerQuality[h].tbr || 0)) {
+      bestPerQuality[h] = f;
+    }
+
+  });
+
+  const formats = Object.values(bestPerQuality)
+    .sort((a,b)=>a.height-b.height)
     .map(f => ({
-      height: f.height,
-      url: f.url
+      quality: `${f.height}p`,
+      formatId: f.format_id,
+      ext: f.ext,
+      videoUrl: f.url
     }));
+
 
   const audio = data.formats
     .filter(f => f.vcodec === "none" && f.acodec !== "none")
-    .sort((a,b) => b.abr - a.abr)[0];
+    .sort((a,b)=>(b.abr || 0)-(a.abr || 0))[0];
+
 
   return {
     title: data.title,
-    audio: audio.url,
-    videos
+    thumbnail: data.thumbnail,
+    audio: audio?.url,
+    videos: formats
   };
+
 }
 
-module.exports = { getFormats };
+module.exports = { getVideoInfo };
