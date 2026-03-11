@@ -1,52 +1,32 @@
-const ytDlp = require("yt-dlp-exec");
+const express = require("express");
+const cors = require("cors");
 
-async function getVideoInfo(videoId) {
+const { getVideoInfo } = require("./services/youtube");
 
-  const url = `https://www.youtube.com/watch?v=${videoId}`;
+const app = express();
+app.use(cors());
+app.use(express.static("public"));
 
-  const data = await ytDlp(url, {
-    dumpSingleJson: true,
-    noWarnings: true
-  });
+const PORT = process.env.PORT || 3000;
 
-  const videoFormats = data.formats.filter(
-    f => f.vcodec !== "none" && f.height
-  );
+app.get("/api/video/:id", async (req, res) => {
 
-  const bestPerQuality = {};
+  try {
 
-  videoFormats.forEach(f => {
+    const data = await getVideoInfo(req.params.id);
 
-    const h = f.height;
+    res.json(data);
 
-    if (!bestPerQuality[h] || (f.tbr || 0) > (bestPerQuality[h].tbr || 0)) {
-      bestPerQuality[h] = f;
-    }
+  } catch (err) {
 
-  });
+    res.status(500).json({
+      error: err.message
+    });
 
-  const formats = Object.values(bestPerQuality)
-    .sort((a,b)=>a.height-b.height)
-    .map(f => ({
-      quality: `${f.height}p`,
-      formatId: f.format_id,
-      ext: f.ext,
-      videoUrl: f.url
-    }));
+  }
 
+});
 
-  const audio = data.formats
-    .filter(f => f.vcodec === "none" && f.acodec !== "none")
-    .sort((a,b)=>(b.abr || 0)-(a.abr || 0))[0];
-
-
-  return {
-    title: data.title,
-    thumbnail: data.thumbnail,
-    audio: audio?.url,
-    videos: formats
-  };
-
-}
-
-module.exports = { getVideoInfo };
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
