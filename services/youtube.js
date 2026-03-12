@@ -1,4 +1,5 @@
 const ytDlp = require("yt-dlp-exec");
+const path = require("path");
 
 async function getVideoInfo(videoId) {
 
@@ -7,7 +8,8 @@ async function getVideoInfo(videoId) {
   const data = await ytDlp(url, {
     dumpSingleJson: true,
     noWarnings: true,
-    cookies: './cookies.txt'
+    cookies: path.join(__dirname, "../cookies.txt"),
+     extractorArgs: "youtube:player_client=android"
   });
 
   const videoFormats = data.formats.filter(
@@ -51,3 +53,4 @@ async function getVideoInfo(videoId) {
 }
 
 module.exports = { getVideoInfo };
+
