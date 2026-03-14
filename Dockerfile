@@ -1,11 +1,11 @@
 FROM node:20
 
-# Install python + pipx
-RUN apt-get update && apt-get install -y python3 python3-pip pipx
-RUN pipx ensurepath
+# Install python and create python alias
+RUN apt-get update && apt-get install -y python3 python3-pip
+RUN ln -s /usr/bin/python3 /usr/bin/python
 
-# Install yt-dlp using pipx
-RUN pipx install yt-dlp
+# Install yt-dlp
+RUN pip install yt-dlp --break-system-packages
 
 WORKDIR /app
 
