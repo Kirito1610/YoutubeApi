@@ -6,9 +6,11 @@ async function getVideoInfo(videoId) {
   const url = `https://www.youtube.com/watch?v=${videoId}`;
 
   const data = await ytDlp(url, {
-    dumpSingleJson: true,
-    noWarnings: true,
-    cookies: path.join(__dirname, "../cookies.txt")
+     dumpSingleJson: true,
+    noCheckCertificates: true,
+      noWarnings: true,
+      preferFreeFormats: true,
+      simulate: true
   });
 
   const videoFormats = data.formats.filter(
