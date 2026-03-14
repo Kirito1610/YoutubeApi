@@ -48,19 +48,21 @@ app.get("/stream/:id", async(req, res) => {
 
   ffmpeg.stdout.pipe(res);
 
-  ffmpeg.stderr.on("data", (data) => {
-    console.log("FFmpeg:", data.toString());
-  });
+ffmpeg.stdout.on("error", (err) => {
+  console.error("FFmpeg stdout error:", err);
+});
 
-  ffmpeg.on("error", (err) => {
-    console.log("Spawn error:", err);
-  });
+ffmpeg.stderr.on("data", (data) => {
+  console.error("FFmpeg stderr:", data.toString());
+});
 
-  req.on("close", () => {
-  if (!res.writableEnded) {
-    console.log("Client disconnected, stopping FFmpeg");
-    ffmpeg.kill("SIGINT");
-  }
+ffmpeg.on("error", (err) => {
+  console.error("FFmpeg process error:", err);
+});
+
+ffmpeg.on("close", (code, signal) => {
+  console.log("FFmpeg closed with code:", code, "signal:", signal);
+  res.end();
 });
 });
 
