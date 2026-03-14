@@ -23,8 +23,8 @@ app.get("/api/video/:id", async (req, res) => {
   }
 });
 
-app.get("/stream", (req, res) => {
-  const { videoUrl, audioUrl } = req.query;
+app.get("/stream/:id", async(req, res) => {
+  const data = await getVideoInfo(req.params.id);
 
   if (!videoUrl || !audioUrl) {
     return res.status(400).send("videoUrl and audioUrl required");
@@ -39,8 +39,8 @@ app.get("/stream", (req, res) => {
   const ffmpeg = spawn(ffmpegPath, [
     "-loglevel", "error",
     "-user_agent", "Mozilla/5.0",
-    "-i", videoUrl,
-    "-i", audioUrl,
+    "-i",  data.videos[4].videoUrl,
+    "-i", data.audio,
     "-map", "0:v:0",
     "-map", "1:a:0",
     "-c:v", "copy",
@@ -64,6 +64,11 @@ app.get("/stream", (req, res) => {
   ffmpeg.on("error", (err) => {
     console.log("Spawn error:", err);
   });
+
+  req.on("close", () => {
+    ffmpeg.kill("SIGINT");
+  });
+});
 
   req.on("close", () => {
     ffmpeg.kill("SIGINT");
