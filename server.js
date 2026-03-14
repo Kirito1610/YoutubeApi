@@ -70,11 +70,6 @@ app.get("/stream/:id", async(req, res) => {
   });
 });
 
-  req.on("close", () => {
-    ffmpeg.kill("SIGINT");
-  });
-});
-
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
