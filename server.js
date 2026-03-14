@@ -30,7 +30,12 @@ app.get("/stream", (req, res) => {
     return res.status(400).send("videoUrl and audioUrl required");
   }
 
-  res.setHeader("Content-Type", "video/mp4");
+  res.writeHead(200, {
+    "Content-Type": "video/mp4",
+    "Transfer-Encoding": "chunked",
+    "Cache-Control": "no-cache"
+  });
+
 
    const ffmpeg = spawn(ffmpegPath, [
   "-user_agent", "Mozilla/5.0",
@@ -47,6 +52,13 @@ app.get("/stream", (req, res) => {
 ]);
 
   ffmpeg.stdout.pipe(res);
+  ffmpeg.stderr.on("data", (data) => {
+    console.log("FFmpeg:", data.toString());
+  });
+
+  ffmpeg.on("error", (err) => {
+    console.log("Spawn error:", err);
+  });
   
   ffmpeg.on("close", () => {
     res.end();
