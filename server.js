@@ -32,15 +32,19 @@ app.get("/stream", (req, res) => {
 
   res.setHeader("Content-Type", "video/mp4");
 
-  const ffmpeg = spawn(ffmpegPath, [
-    "-i", videoUrl,
-    "-i", audioUrl,
-    "-c:v", "copy",
-    "-c:a", "aac",
-    "-movflags", "frag_keyframe+empty_moov",
-    "-f", "mp4",
-    "pipe:1"
-  ]);
+   const ffmpeg = spawn(ffmpegPath, [
+  "-user_agent", "Mozilla/5.0",
+  "-reconnect", "1",
+  "-reconnect_streamed", "1",
+  "-reconnect_delay_max", "5",
+  "-i", videoUrl,
+  "-i", audioUrl,
+  "-c:v", "copy",
+  "-c:a", "aac",
+  "-movflags", "frag_keyframe+empty_moov",
+  "-f", "mp4",
+  "pipe:1"
+]);
 
   ffmpeg.stdout.pipe(res);
   
