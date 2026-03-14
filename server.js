@@ -62,8 +62,11 @@ app.get("/stream/:id", async(req, res) => {
   });
 
   req.on("close", () => {
+  if (!res.writableEnded) {
+    console.log("Client disconnected, stopping FFmpeg");
     ffmpeg.kill("SIGINT");
-  });
+  }
+});
 });
 
 
