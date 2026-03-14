@@ -30,38 +30,39 @@ app.get("/stream", (req, res) => {
     return res.status(400).send("videoUrl and audioUrl required");
   }
 
-  res.writeHead(200, {
-    "Content-Type": "video/mp4",
-    "Transfer-Encoding": "chunked",
-    "Cache-Control": "no-cache"
-  });
+  // Important for streaming
+  res.setHeader("Content-Type", "video/mp4");
+  res.setHeader("Transfer-Encoding", "chunked");
+  res.setHeader("Cache-Control", "no-cache");
+  res.flushHeaders();
 
-
-   const ffmpeg = spawn(ffmpegPath, [
-  "-user_agent", "Mozilla/5.0",
-  "-reconnect", "1",
-  "-reconnect_streamed", "1",
-  "-reconnect_delay_max", "5",
-  "-i", videoUrl,
-  "-i", audioUrl,
-  "-c:v", "copy",
-  "-c:a", "aac",
-  "-movflags", "frag_keyframe+empty_moov",
-  "-f", "mp4",
-  "pipe:1"
-]);
+  const ffmpeg = spawn(ffmpegPath, [
+    "-loglevel", "error",
+    "-user_agent", "Mozilla/5.0",
+    "-i", videoUrl,
+    "-i", audioUrl,
+    "-map", "0:v:0",
+    "-map", "1:a:0",
+    "-c:v", "copy",
+    "-c:a", "aac",
+    "-movflags", "frag_keyframe+empty_moov+faststart",
+    "-f", "mp4",
+    "pipe:1"
+  ]);
 
   ffmpeg.stdout.pipe(res);
+
   ffmpeg.stderr.on("data", (data) => {
     console.log("FFmpeg:", data.toString());
   });
 
+  ffmpeg.on("close", (code) => {
+    console.log("FFmpeg closed:", code);
+    res.end();
+  });
+
   ffmpeg.on("error", (err) => {
     console.log("Spawn error:", err);
-  });
-  
-  ffmpeg.on("close", () => {
-    res.end();
   });
 
   req.on("close", () => {
