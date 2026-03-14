@@ -52,11 +52,6 @@ app.get("/stream/:id", async(req, res) => {
     console.log("FFmpeg:", data.toString());
   });
 
-  ffmpeg.on("close", (code) => {
-    console.log("FFmpeg closed:", code);
-    res.end();
-  });
-
   ffmpeg.on("error", (err) => {
     console.log("Spawn error:", err);
   });
