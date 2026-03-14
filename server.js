@@ -26,10 +26,6 @@ app.get("/api/video/:id", async (req, res) => {
 app.get("/stream/:id", async(req, res) => {
   const data = await getVideoInfo(req.params.id);
 
-  if (!videoUrl || !audioUrl) {
-    return res.status(400).send("videoUrl and audioUrl required");
-  }
-
   // Important for streaming
   res.setHeader("Content-Type", "video/mp4");
   res.setHeader("Transfer-Encoding", "chunked");
