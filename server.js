@@ -31,20 +31,16 @@ app.get("/stream/:id", async(req, res) => {
   res.setHeader("Transfer-Encoding", "chunked");
   res.setHeader("Cache-Control", "no-cache");
   res.flushHeaders();
-
   const ffmpeg = spawn(ffmpegPath, [
-    "-loglevel", "error",
-    "-user_agent", "Mozilla/5.0",
-    "-i",  data.videos[4].videoUrl,
-    "-i", data.audio,
-    "-map", "0:v:0",
-    "-map", "1:a:0",
-    "-c:v", "copy",
-    "-c:a", "aac",
-    "-movflags", "frag_keyframe+empty_moov+faststart",
-    "-f", "mp4",
-    "pipe:1"
-  ]);
+      "-i", data.videos[4].videoUrl,
+      "-i", data.audio,,
+      "-c:v", "copy",
+      "-c:a", "aac",
+      "-f", "hls",
+      "-hls_time", "4",
+      "-hls_list_size", "0",
+      path.join(outputDir, "stream.m3u8")
+    ]);
 
   ffmpeg.stdout.pipe(res);
 
