@@ -1,11 +1,15 @@
 FROM node:20
 
-# Install python and create python alias
-RUN apt-get update && apt-get install -y python3 python3-pip
-RUN ln -s /usr/bin/python3 /usr/bin/python
-
-# Install yt-dlp
-RUN pip install -U yt-dlp --break-system-packages
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    ffmpeg \
+    ca-certificates \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && ln -sf /usr/bin/python3 /usr/bin/python3 \
+    && pip3 install -U yt-dlp --break-system-packages \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -14,4 +18,4 @@ RUN npm install
 
 COPY . .
 
-CMD ["npm","start"]
+CMD ["npm", "start"]
